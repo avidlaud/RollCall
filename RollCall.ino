@@ -2,6 +2,7 @@
 
 //How long after not seeing someone to update their status - 900000=15 minutes
 #define SEEN_INTERVAL 900000
+
 /*
  * Define Users:
  *  - Name
@@ -9,7 +10,7 @@
  *  - MAC Address
  *  Users should have coresponding indices in each list
  */
-
+ 
 #define NUM_USERS 4
 
 String userList[NUM_USERS] = {
@@ -28,6 +29,7 @@ uint8_t pinList[NUM_USERS] = {
 
 uint8_t macAddressList[NUM_USERS][ESPPL_MAC_LEN] = {
    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+  ,{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
   ,{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
   ,{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
@@ -59,8 +61,11 @@ void updateLeds() {
 
 void checkIn(int user) {
   unsigned long curr_time = millis();
-  Serial.printf("%d", user);
-  Serial.printf("%l", curr_time);
+  /* Debugging info
+  Serial.printf("User: %s\n", userList[user].c_str());
+  Serial.printf("Current time: %lu\n", curr_time);
+  Serial.printf("Last seen: %lu\n", lastSeen[user]);
+  */
   if (!isHere[user]) {
     digitalWrite(pinList[user], HIGH);
     isHere[user] = true;
@@ -72,18 +77,18 @@ void checkMatches(esppl_frame_info *info) {
   updateLeds();
   uint8_t *rAddr = info->receiveraddr;
   uint8_t *sAddr = info->sourceaddr;
-  bool rMatch = true;
-  bool sMatch = true;
   for(int user = 0; user < NUM_USERS; user++) {
+    bool rMatch = true;
+    bool sMatch = true;
     for(int i = 0; i < ESPPL_MAC_LEN; i++) {
-      if(rMatch && rAddr[i] != macAddressList[user][i]) {
+      if(rMatch && (rAddr[i] != macAddressList[user][i])) {
         rMatch = false;
       }
-      if(sMatch && sAddr[i] != macAddressList[user][i]) {
+      if(sMatch && (sAddr[i] != macAddressList[user][i])) {
         sMatch = false;
       }
     }
-    if(rMatch && sMatch) {
+    if(rMatch || sMatch) {
       //User is here
       checkIn(user);
     }
